@@ -1,22 +1,23 @@
 var http = require('http');
 
-var resourceMaster = require('./ResourceMaster');
-var resourceManager = resourceMaster.resourceManager;
-var sshManagers = resourceMaster.sshManagers;
+//managers
+var managers = require('./Managers');
+var resourceManager = managers.resourceManager;
+var sshManagers = managers.sshManagers;
 
+//remove unused SSH sessions (remove if idle > 15 min)
 setInterval(function(){
-	console.log('cleaning ssh managers...' + sshManagers.dir);
 	var currentTime = Date.now();
 	console.log('current time::' + currentTime);
-	for(var i = 0; i < sshManagers.length; ++i){
-		console.log('manager time:: ' +sshManagers[i]['last_accessed']);
-		if((currentTime - sshManagers[i]['last_accessed']) > 5000){
-			console.log('removing the manager');
+	for(var connectionKey in sshManagers){
+		if((currentTime - sshManagers[connectionKey]['last_accessed']) > (15 * 60 * 1000)){
+			console.log('removing the manager::' + connectionKey);
+			delete sshManagers[connectionKey];
 		}
 	}
-}, 5*1000);
+}, (15 * 60 * 1000));
 
-/*------------------------create server---------------------*/
+//create server
 var server = http.createServer(function (req, res) {
 	resourceManager.handle(req, res);
 	
