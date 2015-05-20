@@ -1,7 +1,7 @@
 var http = require('http');
 
 //managers
-var managers = require('./Managers');
+var managers = require('./ResourceMaster');
 var resourceManager = managers.resourceManager;
 var sshManagers = managers.sshManagers;
 
@@ -18,8 +18,9 @@ setInterval(function(){
 }, (15 * 60 * 1000));
 
 //create server
-var server = http.createServer(function (req, res) {
-	resourceManager.handle(req, res);
-	
-}).listen(3001, '127.0.0.1');
-console.log('Server running at http://127.0.0.1:3001/');
+var server = resourceManager.listen(3001, function(){
+	var host = server.address().address;
+	var port = server.address().port;
+	console.log('Server running at::', host, port);
+
+});
