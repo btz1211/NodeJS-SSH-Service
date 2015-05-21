@@ -18,12 +18,14 @@ function SSHManager(hostInfo){
 		manager.emit('error', error);
 	});
 
+	var key = fs.readFileSync(hostInfo['key']['path']).toString('utf8');
+	console.log('key:: ' + key);
 	this.client.connect({
 		host: hostInfo['host'],
 		port: hostInfo['port'],
 		username: hostInfo['username'],
 		password: hostInfo['password'],
-		privateKey: fs.readFileSync(hostInfo['key']['path'])
+		privateKey: fs.readFileSync(hostInfo['key']['path']).toString('utf8').trim()
 	});
 }
 
