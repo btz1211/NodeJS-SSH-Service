@@ -1,8 +1,9 @@
 var fs = require('fs');
 var util = require('util');
 var path = require('path');
-var SSHClient = require('ssh2');
 var events = require('events');
+var SSHClient = require('ssh2');
+
 
 function SSHManager(hostInfo){
 	var manager = this;
@@ -18,14 +19,16 @@ function SSHManager(hostInfo){
 		manager.emit('error', error);
 	});
 
-	var key = fs.readFileSync(hostInfo['key']['path']).toString('utf8');
+	
+	var key = fs.readFileSync(hostInfo['key']['path']).toString('utf8').trim();
 	console.log('key:: ' + key);
+	
 	this.client.connect({
 		host: hostInfo['host'],
 		port: hostInfo['port'],
 		username: hostInfo['username'],
 		password: hostInfo['password'],
-		privateKey: fs.readFileSync(hostInfo['key']['path']).toString('utf8').trim()
+		privateKey: key
 	});
 }
 
@@ -44,7 +47,7 @@ SSHManager.prototype.checkDirectory = function(directory, resultHandler){
 		sftp.readdir(directory, function(error, list){
 			if(error){
 				console.log('READDIR::Error::' + error);
-				manager.emit('error', error);
+				return manager.emit('error', error);
 			}
 			
 			sftp.end();
@@ -63,28 +66,36 @@ SSHManager.prototype.loadFile = function(filePath, resultHandler){
 			return manager.emit('error', error);
 		}
 		
-		var fileName = path.basename(filePath);
+		//ftp file name
+		var fileName = './downloads/'+path.basename(filePath);
 		
 		//read file loaded and send it back to user
 		sftp.on('end', function(){
 			fs.readFile(fileName, function(error, data){
 				if(error){
 					console.log('READFILE::Error::' + error);
-					manager.emit('error', error);
+					return manager.emit('error', error);
+				}					
+				console.log('data loaded');
+				resultHandler.emit('dataReady', data);
+			});
+			
+			//remove file - no need to keep after 
+			fs.unlink(fileName, function (error) {
+				if (error){
+					console.log('error when attempting to delete::' + fileName);
 				}
-				
-				resultHandler.emit('fileReady', data);
 			});
 		});
 		
-		//first load file to local file
+		//first get file from server and put in to local drive
 		sftp.fastGet(filePath, fileName, function(error){
 			if(error){
 				console.log('FASTGET::Error::' + error);
 				return manager.emit('error', error);
 			}
 			sftp.end();
-		});
+		});	
 	});
 };
 
